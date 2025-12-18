@@ -28,7 +28,6 @@ function App() {
         loading,
         refreshing,
         refreshError,
-        progress,
         isConfigured,
         handleDateSelect,
         handleRefresh
@@ -49,47 +48,10 @@ function App() {
                     <Activity className='w-16 h-16 mx-auto animate-pulse text-primary' />
                     <div className='space-y-2'>
                         <p className='text-xl font-semibold'>Loading ActivityTracker...</p>
-                        {progress && (
-                            <div className='space-y-3'>
-                                <div className='w-full bg-secondary rounded-full h-2.5 overflow-hidden relative'>
-                                    <div
-                                        className='bg-primary h-full transition-all duration-500 ease-out relative z-10'
-                                        style={{ width: `${Math.max(progress.progress, 2)}%` }}
-                                    />
-                                    <div className='absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer z-20' />
-                                </div>
-                                <div className='flex flex-col text-sm text-muted-foreground'>
-                                    <div className='flex items-center justify-center gap-1 font-medium text-foreground'>
-                                        <span className='animate-pulse'>{progress.status}</span>
-                                        <span className='flex gap-0.5'>
-                                            <span className='animate-bounce [animation-delay:-0.3s]'>.</span>
-                                            <span className='animate-bounce [animation-delay:-0.15s]'>.</span>
-                                            <span className='animate-bounce'>.</span>
-                                        </span>
-                                    </div>
-                                    {progress.current !== undefined && progress.total !== undefined && (
-                                        <div className='flex items-center justify-center gap-1.5 mt-1'>
-                                            <span className='text-primary font-bold tabular-nums transition-all duration-200'>
-                                                {progress.current.toLocaleString()}
-                                            </span>
-                                            <span className='opacity-50'>/</span>
-                                            <span className='tabular-nums'>{progress.total.toLocaleString()} records</span>
-                                        </div>
-                                    )}
-                                    {progress.memoryUsageMb && (
-                                        <span className='text-[10px] mt-2 opacity-50 uppercase tracking-wider'>System Memory: {progress.memoryUsageMb}MB</span>
-                                    )}
-                                </div>
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => window.electronAPI.cancelDatabaseOperation()}
-                                    className="mt-4"
-                                >
-                                    Cancel Operation
-                                </Button>
-                            </div>
-                        )}
+                        <div className='w-full bg-secondary rounded-full h-2.5 overflow-hidden relative mt-4'>
+                            <div className='absolute inset-0 bg-gradient-to-r from-transparent via-primary to-transparent animate-pulse'
+                                 style={{ animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite' }} />
+                        </div>
                     </div>
                 </div>
             </div>
@@ -98,13 +60,6 @@ function App() {
 
     return (
         <div className='min-h-screen bg-background'>
-            <div className='border-b'>
-                <div className='flex h-16 items-center px-6'>
-                    <Activity className='h-6 w-6 mr-2 text-primary' />
-                    <h1 className='text-2xl font-bold'>Activity Tracker Analysis</h1>
-                </div>
-            </div>
-
             <div className='container mx-auto p-6'>
                 {(refreshing || refreshError) && (
                     <div className='fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-xl transition-all duration-500'>

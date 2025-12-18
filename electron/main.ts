@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
-import { discoverDatabase, exportToJson, DatabaseService, ProgressData } from './db-reader'
+import { DuckDBService } from './duckdb-service'
 import { analyzeSingleDate, analyzeMultiDate, getAvailableDates } from './analyzer'
 import { getConfig, setConfig, initializeConfig, Config } from './config'
 
@@ -40,8 +40,15 @@ const createWindow = () => {
     })
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
     createWindow()
+
+    // Initialize DuckDB
+    try {
+        await DuckDBService.getInstance().attachDatabase()
+    } catch (error) {
+        console.error('Failed to initialize DuckDB:', error)
+    }
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -59,29 +66,16 @@ app.on('window-all-closed', () => {
 // IPC Handlers
 ipcMain.handle('db:discover', async () => {
     try {
-        const dbPath = await discoverDatabase()
+        const dbPath = await DuckDBService.getInstance().discoverDatabase()
+        // Ensure it's attached
+        await DuckDBService.getInstance().attachDatabase()
         return { success: true, path: dbPath }
     } catch (error) {
         return { success: false, error: (error as Error).message }
     }
 })
 
-ipcMain.handle('db:export-json', async (event) => {
-    try {
-        const dbService = DatabaseService.getInstance()
-        const jsonPath = await dbService.exportAllData((progress: ProgressData) => {
-            event.sender.send('db:progress', progress)
-        })
-        return { success: true, path: jsonPath }
-    } catch (error) {
-        return { success: false, error: (error as Error).message }
-    }
-})
 
-ipcMain.handle('db:cancel', async () => {
-    DatabaseService.getInstance().cancel()
-    return { success: true }
-})
 
 ipcMain.handle('analysis:get-dates', async () => {
     try {
@@ -144,7 +138,9 @@ ipcMain.handle('config:set', async (_event, newConfig: Partial<Config>) => {
 
 ipcMain.handle('app:refresh', async () => {
     try {
-        await exportToJson()
+        // Re-attach DB to ensure we have latest data (if file changed)
+        await DuckDBService.getInstance().attachDatabase()
+
         const config = await getConfig()
         const dates = await getAvailableDates(config)
         return { success: true, dates }

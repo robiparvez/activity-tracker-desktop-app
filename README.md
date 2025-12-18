@@ -1,90 +1,97 @@
-# Activity Tracker Desktop Application
+# Activity Tracker Analysis
 
-This folder contains the Electron + React desktop application for Activity Tracker analysis.
+Activity Tracker Analysis is a powerful desktop application designed to provide deep insights into your work habits and productivity. It automatically analyzes data from the "ActivityTracker" local database, offering detailed daily breakdowns and long-term trends.
 
-## Quick Start
+## 🚀 Key Features
+
+- **Automatic Configuration**: Zero-touch setup! The app automatically detects your:
+  - ActivityTracker SQLite database path.
+  - Decryption key (`agent.key`) for secure data access.
+  - System hostname (Employee ID) for personalized analysis.
+- **Deep Daily Analysis**:
+  - Track active, inactive, and AFK (Away From Keyboard) hours.
+  - Visualize your day with interactive pie and bar charts.
+  - Get a productivity rating (Excellent, Good, or Needs Improvement) based on your activity rate and total hours.
+- **Multi-Day Summary**:
+  - View trends over the **last 30 days**.
+  - Analyze activity rates and hours distribution across multiple days.
+  - Track your average daily performance.
+- **Real-time Data Sync**: Refresh data at any time to get the latest insights directly from your local database.
+- **Modern UI/UX**: A sleek, responsive interface built with Tailwind CSS and Shadcn UI, featuring smooth animations and clear data visualizations.
+
+## 🛠️ Technical Stack
+
+### Frontend
+
+- **Framework**: [React](https://reactjs.org/) with [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [Shadcn UI](https://ui.shadcn.com/) & [Radix UI](https://www.radix-ui.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Charts**: [Recharts](https://recharts.org/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+
+### Backend (Electron)
+
+- **Runtime**: [Electron](https://www.electronjs.org/) & [Node.js](https://nodejs.org/)
+- **Database**: [Better-SQLite3](https://github.com/WiseLibs/better-sqlite3)
+- **Decryption**: [Fernet](https://github.com/fernet/fernet-node) (for secure data handling)
+- **Build Tool**: [Vite](https://vitejs.dev/) with `vite-plugin-electron`
+
+## 📂 Project Structure
+
+```text
+├── electron/               # Main process logic
+│   ├── main.ts             # Electron entry point & IPC handlers
+│   ├── db-reader.ts        # SQLite database interaction & data export
+│   ├── analyzer.ts         # Data analysis & productivity logic
+│   ├── config.ts           # Automatic configuration management
+│   └── preload.ts          # Preload script for secure IPC
+├── src/                    # Frontend React application
+│   ├── components/         # UI components (Dashboard, Summary, Settings)
+│   ├── hooks/              # Custom React hooks for data & logic
+│   ├── lib/                # Utility functions
+│   └── App.tsx             # Main application component
+└── package.json            # Project dependencies & scripts
+```
+
+## ⚙️ Data Analysis Logic
+
+- **30-Day Window**: To ensure performance and relevance, the application focuses on the most recent 30 days of activity.
+- **Productivity Metrics**:
+  - **Excellent 🟢**: Activity rate ≥ 80% AND total hours ≥ 6.
+  - **Good 🟡**: Activity rate ≥ 60% AND total hours ≥ 4.
+  - **Needs Improvement 🔴**: Otherwise.
+
+## Development & Build
 
 ### Prerequisites
 
-- Node.js 18+ required
+- [Node.js](https://nodejs.org/) (LTS recommended)
+- [npm](https://www.npmjs.com/)
 
-### Installation
+### Setup
 
-```bash
-npm install
-```
+1. Clone the repository.
+2. Install dependencies:
 
-### Development
+   ```bash
+   npm install
+   ```
+
+### Run in Development
 
 ```bash
 npm run electron:dev
 ```
 
-### Build
+### Build for Production
 
 ```bash
 npm run electron:build
 ```
 
-The installer will be created in the `release/` directory.
+The installer will be generated in the `release/` directory.
 
-## Documentation
+## 📄 License
 
-- **README.md** - This file (quick start)
-- **INSTALLATION-GUIDE.md** - Detailed setup instructions
-- **DEVELOPMENT-NOTES.md** - Technical architecture details
-
-## Configuration
-
-On first run, configure your settings:
-
-1. Open Settings tab
-2. Enter your Fernet decryption key
-3. Enter your Hostname
-4. Save configuration
-
-## Project Structure
-
-```text
-├── electron/              # Electron main process
-│   ├── main.ts           # App initialization & IPC
-│   ├── preload.ts        # Context bridge
-│   ├── db-reader.ts      # SQLite database handler
-│   ├── analyzer.ts       # Analysis logic
-│   └── config.ts         # Configuration management
-├── src/                   # React frontend
-│   ├── components/       # React components
-│   │   ├── Dashboard.tsx
-│   │   ├── Summary.tsx
-│   │   ├── Settings.tsx
-│   │   └── ui/          # shadcn/ui components
-│   ├── lib/             # Utilities
-│   ├── types/           # TypeScript types
-│   ├── App.tsx          # Main app component
-│   ├── main.tsx         # React entry point
-│   └── index.css        # Global styles
-├── package.json          # Dependencies
-├── vite.config.ts        # Build configuration
-├── tsconfig.json         # TypeScript config
-└── index.html           # HTML entry point
-```
-
-## Features
-
-- 🔍 Automatic ActivityTracker database discovery
-- 📊 Modern dashboard with interactive charts
-- 📈 Multi-day analytics and trends
-- ⚙️ Easy configuration interface
-- 🎨 Beautiful UI with TailwindCSS + shadcn/ui
-- 🔄 One-click data refresh
-
-## Tech Stack
-
-**Frontend:** React 18 + TypeScript + TailwindCSS + shadcn/ui
-**Backend:** Electron + Node.js + better-sqlite3
-**Charts:** Recharts
-**Build:** Vite + electron-builder
-
-## Support
-
-See the documentation files for detailed information or check the parent directory's README.md for Python CLI alternative.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

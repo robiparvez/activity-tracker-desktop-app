@@ -69,9 +69,8 @@ export function useAppInitialization(): UseAppInitializationReturn {
                 });
             }
 
-            // Discover and export database
+            // Discover database
             await window.electronAPI.discoverDatabase();
-            await window.electronAPI.exportToJson();
 
             // Load available dates
             const result = await window.electronAPI.getAvailableDates();

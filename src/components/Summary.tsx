@@ -25,7 +25,6 @@ export default function Summary({ dates, multiDayData }: SummaryProps) {
     return (
         <div className='space-y-6'>
             <div>
-                <h2 className='text-3xl font-bold tracking-tight'>Multi-Day Summary</h2>
                 <p className='text-muted-foreground'>Analysis of {data?.totalDays} days of activity</p>
             </div>
 

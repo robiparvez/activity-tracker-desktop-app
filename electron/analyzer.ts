@@ -1,4 +1,4 @@
-import { getActivitiesForDate, getAvailableDatesFromDb } from './db-reader'
+import { DuckDBService } from './duckdb-service'
 import { Config } from './config'
 import * as crypto from 'crypto'
 
@@ -97,8 +97,9 @@ function calculateProductivity(activityRate: number, totalHours: number): {
 
 export async function getAvailableDates(config: Config): Promise<string[]> {
     try {
-        return await getAvailableDatesFromDb(config.employeeId)
+        return await DuckDBService.getInstance().getAvailableDates(config.employeeId)
     } catch (error) {
+        console.error('Failed to get available dates:', error)
         return []
     }
 }
@@ -107,7 +108,7 @@ export async function analyzeSingleDate(
     date: string,
     config: Config
 ): Promise<DailyAnalysis> {
-    const dayRecords = await getActivitiesForDate(date, config.employeeId)
+    const dayRecords = await DuckDBService.getInstance().getRawActivities(config.employeeId, date)
 
     if (dayRecords.length === 0) {
         console.warn('[Analyzer] No data found for date:', date)
@@ -152,7 +153,7 @@ export async function analyzeSingleDate(
     const activeHours = activeSeconds / 3600
     const afkHours = afkSeconds / 3600
     const inactiveHours = totalHours - activeHours
-    const activityRate = (activeHours / totalHours) * 100
+    const activityRate = totalHours > 0 ? (activeHours / totalHours) * 100 : 0
 
     const productivity = calculateProductivity(activityRate, totalHours)
 
@@ -176,9 +177,81 @@ export async function analyzeMultiDate(
     dates: string[],
     config: Config
 ): Promise<MultiDayAnalysis> {
-    const dailyAnalyses = await Promise.all(
-        dates.map((date) => analyzeSingleDate(date, config))
-    )
+    // Optimization: Fetch ALL data at once if we are analyzing many dates
+    // However, for now, we can stick to parallel single-date analysis
+    // because DuckDB is fast enough to handle concurrent queries.
+    // If dates array is very large (e.g. all time), we might want to fetch all and group by date in JS.
+
+    // Let's try fetching all data for the employee and processing it in memory
+    // This is much faster than 1000 SQL queries
+    const allRecords = await DuckDBService.getInstance().getRawActivities(config.employeeId)
+
+    // Group by date
+    const recordsByDate: Record<string, any[]> = {}
+    for (const record of allRecords) {
+        const date = record.start_time.substring(0, 10)
+        if (dates.includes(date)) {
+            if (!recordsByDate[date]) recordsByDate[date] = []
+            recordsByDate[date].push(record)
+        }
+    }
+
+    const dailyAnalyses: DailyAnalysis[] = []
+
+    for (const date of dates) {
+        const dayRecords = recordsByDate[date] || []
+        if (dayRecords.length === 0) continue
+
+        let totalSeconds = 0
+        let activeSeconds = 0
+        let afkSeconds = 0
+
+        for (const record of dayRecords) {
+            try {
+                const durationStr = config.decryptionKey
+                    ? decryptValue(record.duration_seconds, config.decryptionKey)
+                    : record.duration_seconds
+
+                const duration = parseFloat(durationStr)
+                totalSeconds += duration
+
+                const afkStr = config.decryptionKey
+                    ? decryptValue(record.is_afk, config.decryptionKey)
+                    : record.is_afk
+
+                const isAfk = afkStr === '1' || afkStr === 'true' || afkStr === 'True'
+
+                if (isAfk) {
+                    afkSeconds += duration
+                } else {
+                    activeSeconds += duration
+                }
+            } catch (e) {
+                // Skip malformed records
+                continue
+            }
+        }
+
+        const totalHours = totalSeconds / 3600
+        const activeHours = activeSeconds / 3600
+        const afkHours = afkSeconds / 3600
+        const inactiveHours = totalHours - activeHours
+        const activityRate = totalHours > 0 ? (activeHours / totalHours) * 100 : 0
+        const productivity = calculateProductivity(activityRate, totalHours)
+
+        dailyAnalyses.push({
+            date,
+            totalHours: Math.round(totalHours * 100) / 100,
+            activeHours: Math.round(activeHours * 100) / 100,
+            inactiveHours: Math.round(inactiveHours * 100) / 100,
+            afkHours: Math.round(afkHours * 100) / 100,
+            activityRate: Math.round(activityRate * 10) / 10,
+            startTime: 'N/A', // Not needed for summary
+            endTime: 'N/A',   // Not needed for summary
+            productivity: productivity.level,
+            productivityEmoji: productivity.emoji,
+        })
+    }
 
     let totalActiveHours = 0
     let totalTrackedHours = 0
@@ -198,11 +271,11 @@ export async function analyzeMultiDate(
         }
     })
 
-    const totalDays = dates.length
-    const averageActiveHours = totalActiveHours / totalDays
-    const averageTotalHours = totalTrackedHours / totalDays
-    const averageInactiveHours = totalInactiveHours / totalDays
-    const overallActivityRate = (totalActiveHours / totalTrackedHours) * 100
+    const totalDays = dailyBreakdown.length
+    const averageActiveHours = totalDays > 0 ? totalActiveHours / totalDays : 0
+    const averageTotalHours = totalDays > 0 ? totalTrackedHours / totalDays : 0
+    const averageInactiveHours = totalDays > 0 ? totalInactiveHours / totalDays : 0
+    const overallActivityRate = totalTrackedHours > 0 ? (totalActiveHours / totalTrackedHours) * 100 : 0
 
     return {
         totalDays,

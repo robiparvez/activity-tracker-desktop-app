@@ -1,6 +1,5 @@
-export interface ElectronAPI {
+interface ElectronAPI {
     discoverDatabase: () => Promise<{ success: boolean; path?: string; error?: string }>
-    exportToJson: () => Promise<{ success: boolean; path?: string; error?: string }>
     getAvailableDates: () => Promise<{ success: boolean; dates?: string[]; error?: string }>
     analyzeSingleDate: (date: string) => Promise<{ success: boolean; data?: any; error?: string }>
     analyzeMultiDate: (dates: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
@@ -9,7 +8,7 @@ export interface ElectronAPI {
     initializeConfig: () => Promise<{ success: boolean; config?: any; error?: string }>
     refreshData: () => Promise<{ success: boolean; dates?: string[]; error?: string }>
     onProgress: (callback: (data: any) => void) => () => void
-    cancelDatabaseOperation: () => Promise<{ success: boolean }>
+
 }
 
 declare global {
