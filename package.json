@@ -69,8 +69,10 @@
         },
         "files": [
             "dist/**/*",
-            "dist-electron/**/*"
+            "dist-electron/**/*",
+            "node_modules/duckdb/**/*"
         ],
+        "npmRebuild": false,
         "win": {
             "target": [
                 {
