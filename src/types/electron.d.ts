@@ -6,6 +6,7 @@ export interface ElectronAPI {
     analyzeMultiDate: (dates: string[]) => Promise<{ success: boolean; data?: any; error?: string }>
     getConfig: () => Promise<{ success: boolean; config?: any; error?: string }>
     setConfig: (config: any) => Promise<{ success: boolean; error?: string }>
+    initializeConfig: () => Promise<{ success: boolean; config?: any; error?: string }>
     refreshData: () => Promise<{ success: boolean; dates?: string[]; error?: string }>
 }
 

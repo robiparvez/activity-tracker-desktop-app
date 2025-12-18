@@ -26,8 +26,9 @@ export default function Dashboard({ selectedDate, analysisData }: DashboardProps
         <div className='space-y-6'>
             <div className='flex items-center justify-between'>
                 <div>
-                    <h2 className='text-3xl font-bold tracking-tight'>Daily Analysis</h2>
-                    <p className='text-muted-foreground'>{formattedDate}</p>
+                    <p className='text-sm font-medium text-muted-foreground uppercase tracking-wider'>
+                        {formattedDate}
+                    </p>
                 </div>
                 <div className='text-right'>
                     <div className='text-4xl font-bold'>{data?.productivityEmoji}</div>

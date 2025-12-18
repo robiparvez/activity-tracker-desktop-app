@@ -8,5 +8,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     analyzeMultiDate: (dates: string[]) => ipcRenderer.invoke('analysis:run-multi-date', dates),
     getConfig: () => ipcRenderer.invoke('config:get'),
     setConfig: (config: any) => ipcRenderer.invoke('config:set', config),
+    initializeConfig: () => ipcRenderer.invoke('config:initialize'),
     refreshData: () => ipcRenderer.invoke('app:refresh'),
 })

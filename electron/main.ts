@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
 import { discoverDatabase, exportToJson } from './db-reader'
 import { analyzeSingleDate, analyzeMultiDate, getAvailableDates } from './analyzer'
-import { getConfig, setConfig, Config } from './config'
+import { getConfig, setConfig, initializeConfig, Config } from './config'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -115,6 +115,15 @@ ipcMain.handle('analysis:run-multi-date', async (_event, dates: string[]) => {
 ipcMain.handle('config:get', async () => {
     try {
         const config = await getConfig()
+        return { success: true, config }
+    } catch (error) {
+        return { success: false, error: (error as Error).message }
+    }
+})
+
+ipcMain.handle('config:initialize', async () => {
+    try {
+        const config = await initializeConfig()
         return { success: true, config }
     } catch (error) {
         return { success: false, error: (error as Error).message }

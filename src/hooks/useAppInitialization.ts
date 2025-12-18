@@ -11,10 +11,11 @@ interface UseAppInitializationReturn {
     singleDayData: any;
     multiDayData: any;
     loading: boolean;
+    refreshing: boolean;
     config: Config;
     isConfigured: boolean;
     handleDateSelect: (date: string) => Promise<void>;
-    handleConfigUpdate: () => Promise<void>;
+    handleRefresh: () => Promise<void>;
 }
 
 export function useAppInitialization(): UseAppInitializationReturn {
@@ -23,6 +24,7 @@ export function useAppInitialization(): UseAppInitializationReturn {
     const [singleDayData, setSingleDayData] = useState(null);
     const [multiDayData, setMultiDayData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
     const [config, setConfig] = useState<Config>({ decryptionKey: '', employeeId: '' });
 
     const loadSingleDayData = async (date: string) => {
@@ -54,7 +56,7 @@ export function useAppInitialization(): UseAppInitializationReturn {
 
         try {
             // Load config first to check if settings are configured
-            const configResult = await window.electronAPI.getConfig();
+            const configResult = await window.electronAPI.initializeConfig();
             if (configResult.success && configResult.config) {
                 setConfig({
                     decryptionKey: configResult.config.decryptionKey || '',
@@ -71,10 +73,13 @@ export function useAppInitialization(): UseAppInitializationReturn {
             if (result.success && result.dates) {
                 setDates(result.dates);
                 if (result.dates.length > 0) {
-                    // Select the most recent date by default
-                    const mostRecent = result.dates[result.dates.length - 1];
-                    setSelectedDate(mostRecent);
-                    await loadSingleDayData(mostRecent);
+                    // Try to select today's date first
+                    const today = new Date().toISOString().split('T')[0];
+                    const hasToday = result.dates.includes(today);
+                    const defaultDate = hasToday ? today : result.dates[result.dates.length - 1];
+
+                    setSelectedDate(defaultDate);
+                    await loadSingleDayData(defaultDate);
                     await loadMultiDayData(result.dates);
                 }
             }
@@ -91,8 +96,18 @@ export function useAppInitialization(): UseAppInitializationReturn {
         await loadSingleDayData(date);
     };
 
-    const handleConfigUpdate = async () => {
-        await initializeApp();
+    const handleRefresh = async () => {
+        setRefreshing(true);
+        try {
+            const result = await window.electronAPI.refreshData();
+            if (result.success) {
+                await initializeApp();
+            }
+        } catch (error) {
+            console.error('Failed to refresh data:', error);
+        } finally {
+            setRefreshing(false);
+        }
     };
 
     useEffect(() => {
@@ -107,9 +122,10 @@ export function useAppInitialization(): UseAppInitializationReturn {
         singleDayData,
         multiDayData,
         loading,
+        refreshing,
         config,
         isConfigured,
         handleDateSelect,
-        handleConfigUpdate
+        handleRefresh
     };
 }

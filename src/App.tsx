@@ -1,16 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import Dashboard from '@/components/Dashboard';
 import Summary from '@/components/Summary';
 import Settings from '@/components/Settings';
-import { Calendar, BarChart3, Settings as SettingsIcon, Activity } from 'lucide-react';
+import { Calendar, BarChart3, Info, Activity, RefreshCw } from 'lucide-react';
 import { useAppInitialization } from '@/hooks/useAppInitialization';
 import { useDateFormatter } from '@/hooks/useDateFormatter';
 
 function App() {
-    const [activeTab, setActiveTab] = useState('settings');
+    const [activeTab, setActiveTab] = useState('dashboard');
 
     const {
         dates,
@@ -18,12 +26,19 @@ function App() {
         singleDayData,
         multiDayData,
         loading,
+        refreshing,
         isConfigured,
         handleDateSelect,
-        handleConfigUpdate
+        handleRefresh
     } = useAppInitialization();
 
     const { formatDate } = useDateFormatter();
+
+    useEffect(() => {
+        if (!loading && !isConfigured) {
+            setActiveTab('settings');
+        }
+    }, [loading, isConfigured]);
 
     if (loading) {
         return (
@@ -47,47 +62,67 @@ function App() {
 
             <div className='container mx-auto p-6'>
                 <Tabs value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
-                    <TabsList className={`grid w-full max-w-md ${isConfigured ? 'grid-cols-3' : 'grid-cols-1'}`}>
-                        <TabsTrigger key='settings' value='settings' className='flex items-center gap-2'>
-                            <SettingsIcon className='h-4 w-4' />
-                            Settings
-                        </TabsTrigger>
-                        {isConfigured && (
-                            <>
-                                <TabsTrigger key='summary' value='summary' className='flex items-center gap-2'>
-                                    <BarChart3 className='h-4 w-4' />
-                                    Summary
-                                </TabsTrigger>
-                                <TabsTrigger key='dashboard' value='dashboard' className='flex items-center gap-2'>
-                                    <Calendar className='h-4 w-4' />
-                                    Daily Analysis
-                                </TabsTrigger>
-                            </>
-                        )}
-                    </TabsList>
+                    <div className='flex items-center justify-between'>
+                        <TabsList className={`grid w-full max-w-md ${isConfigured ? 'grid-cols-3' : 'grid-cols-1'}`}>
+                            {isConfigured && (
+                                <>
+                                    <TabsTrigger key='dashboard' value='dashboard' className='flex items-center gap-2'>
+                                        <Calendar className='h-4 w-4' />
+                                        Daily Analysis
+                                    </TabsTrigger>
+                                    <TabsTrigger key='summary' value='summary' className='flex items-center gap-2'>
+                                        <BarChart3 className='h-4 w-4' />
+                                        Summary
+                                    </TabsTrigger>
+                                </>
+                            )}
+                            <TabsTrigger key='settings' value='settings' className='flex items-center gap-2'>
+                                <Info className='h-4 w-4' />
+                                System Info
+                            </TabsTrigger>
+                        </TabsList>
 
-                    <TabsContent value='settings' className='space-y-4'>
-                        <Settings onConfigUpdate={handleConfigUpdate} onTabChange={setActiveTab} />
-                    </TabsContent>
+                        <Button
+                            variant='ghost'
+                            size='icon'
+                            onClick={handleRefresh}
+                            disabled={refreshing}
+                            className='ml-auto'
+                            title='Refresh Data'
+                        >
+                            <RefreshCw className={`h-5 w-5 ${refreshing ? 'animate-spin' : ''}`} />
+                        </Button>
+                    </div>
 
                     {isConfigured && activeTab === 'dashboard' && dates.length > 0 && (
-                        <Card>
-                            <CardContent className='pt-6'>
-                                <div className='flex items-center gap-2 mb-4'>
-                                    <Calendar className='h-4 w-4 text-muted-foreground' />
-                                    <span className='text-sm font-medium'>Select Date:</span>
-                                </div>
-                                <div className='flex flex-wrap gap-2'>
-                                    {dates.slice(-10).map(date => (
-                                        <Button
-                                            key={date}
-                                            variant={selectedDate === date ? 'default' : 'outline'}
-                                            size='sm'
-                                            onClick={() => handleDateSelect(date)}
+                        <Card className="bg-card/50 backdrop-blur-sm border-primary/10">
+                            <CardContent className='py-4'>
+                                <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4'>
+                                    <div className='space-y-1'>
+                                        <h2 className='text-xl font-semibold tracking-tight'>Daily Analysis</h2>
+                                        <p className='text-sm text-muted-foreground'>
+                                            {selectedDate === dates[dates.length - 1] ? 'Showing today\'s activity' : `Viewing activity for ${formatDate(selectedDate || '')}`}
+                                        </p>
+                                    </div>
+                                    <div className='flex items-center gap-3'>
+                                        <Label htmlFor="date-select" className='text-sm font-medium text-muted-foreground whitespace-nowrap'>Change Date:</Label>
+                                        <Select
+                                            value={selectedDate || undefined}
+                                            onValueChange={handleDateSelect}
                                         >
-                                            {formatDate(date)}
-                                        </Button>
-                                    ))}
+                                            <SelectTrigger id="date-select" className="w-[180px] bg-background/50">
+                                                <SelectValue placeholder="Select date" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {[...dates].sort((a, b) => a.localeCompare(b)).reverse().map((date) => (
+                                                    <SelectItem key={date} value={date}>
+                                                        {formatDate(date)}
+                                                        {date === dates[dates.length - 1] && " (Today)"}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
                                 </div>
                             </CardContent>
                         </Card>
@@ -96,7 +131,10 @@ function App() {
                     {isConfigured && (
                         <>
                             <TabsContent value='dashboard' className='space-y-4'>
-                                <Dashboard selectedDate={selectedDate} analysisData={singleDayData} />
+                                <Dashboard
+                                    selectedDate={selectedDate}
+                                    analysisData={singleDayData}
+                                />
                             </TabsContent>
 
                             <TabsContent value='summary' className='space-y-4'>
@@ -104,6 +142,10 @@ function App() {
                             </TabsContent>
                         </>
                     )}
+
+                    <TabsContent value='settings' className='space-y-4'>
+                        <Settings />
+                    </TabsContent>
                 </Tabs>
             </div>
         </div>
