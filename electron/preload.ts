@@ -10,4 +10,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
     setConfig: (config: any) => ipcRenderer.invoke('config:set', config),
     initializeConfig: () => ipcRenderer.invoke('config:initialize'),
     refreshData: () => ipcRenderer.invoke('app:refresh'),
+    onProgress: (callback: (data: any) => void) => {
+        const subscription = (_event: any, value: any) => callback(value);
+        ipcRenderer.on('db:progress', subscription);
+        return () => ipcRenderer.removeListener('db:progress', subscription);
+    },
+    cancelDatabaseOperation: () => ipcRenderer.invoke('db:cancel'),
 })

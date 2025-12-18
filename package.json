@@ -19,7 +19,7 @@
         "electron",
         "react"
     ],
-    "author": "M. D. Robiuzzaman Parvez",
+    "author": "Robiuzzaman Parvez (50000179)",
     "license": "MIT",
     "dependencies": {
         "better-sqlite3": "^12.4.1",

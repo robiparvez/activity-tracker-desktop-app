@@ -1,4 +1,4 @@
-import { readActivityData } from './db-reader'
+import { getActivitiesForDate, getAvailableDatesFromDb } from './db-reader'
 import { Config } from './config'
 import * as crypto from 'crypto'
 
@@ -97,18 +97,7 @@ function calculateProductivity(activityRate: number, totalHours: number): {
 
 export async function getAvailableDates(config: Config): Promise<string[]> {
     try {
-        const data = await readActivityData()
-
-        const dates = new Set<string>()
-
-        for (const record of data) {
-            if (record.employee_id === config.employeeId && record.start_time) {
-                const dateStr = record.start_time.split('T')[0]
-                dates.add(dateStr)
-            }
-        }
-
-        return Array.from(dates).sort()
+        return await getAvailableDatesFromDb(config.employeeId)
     } catch (error) {
         return []
     }
@@ -118,23 +107,7 @@ export async function analyzeSingleDate(
     date: string,
     config: Config
 ): Promise<DailyAnalysis> {
-    console.log('[Analyzer] analyzeSingleDate called:', { date, employeeId: config.employeeId })
-
-    const data = await readActivityData()
-    console.log('[Analyzer] Total records loaded:', data.length)
-
-    const dayRecords = data.filter((r: any) => {
-        if (r.employee_id !== config.employeeId || !r.start_time) return false
-        const recordDate = r.start_time.split('T')[0]
-        return recordDate === date
-    })
-
-    console.log('[Analyzer] Filtered records for date:', {
-        date,
-        employeeId: config.employeeId,
-        matchingRecords: dayRecords.length,
-        sampleRecord: dayRecords[0]
-    })
+    const dayRecords = await getActivitiesForDate(date, config.employeeId)
 
     if (dayRecords.length === 0) {
         console.warn('[Analyzer] No data found for date:', date)
@@ -196,7 +169,6 @@ export async function analyzeSingleDate(
         productivityEmoji: productivity.emoji,
     }
 
-    console.log('[Analyzer] Analysis result:', result)
     return result
 }
 

@@ -8,6 +8,8 @@ export interface ElectronAPI {
     setConfig: (config: any) => Promise<{ success: boolean; error?: string }>
     initializeConfig: () => Promise<{ success: boolean; config?: any; error?: string }>
     refreshData: () => Promise<{ success: boolean; dates?: string[]; error?: string }>
+    onProgress: (callback: (data: any) => void) => () => void
+    cancelDatabaseOperation: () => Promise<{ success: boolean }>
 }
 
 declare global {

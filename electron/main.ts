@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import path from 'path'
-import { discoverDatabase, exportToJson } from './db-reader'
+import { discoverDatabase, exportToJson, DatabaseService, ProgressData } from './db-reader'
 import { analyzeSingleDate, analyzeMultiDate, getAvailableDates } from './analyzer'
 import { getConfig, setConfig, initializeConfig, Config } from './config'
 
@@ -66,13 +66,21 @@ ipcMain.handle('db:discover', async () => {
     }
 })
 
-ipcMain.handle('db:export-json', async () => {
+ipcMain.handle('db:export-json', async (event) => {
     try {
-        const jsonPath = await exportToJson()
+        const dbService = DatabaseService.getInstance()
+        const jsonPath = await dbService.exportAllData((progress: ProgressData) => {
+            event.sender.send('db:progress', progress)
+        })
         return { success: true, path: jsonPath }
     } catch (error) {
         return { success: false, error: (error as Error).message }
     }
+})
+
+ipcMain.handle('db:cancel', async () => {
+    DatabaseService.getInstance().cancel()
+    return { success: true }
 })
 
 ipcMain.handle('analysis:get-dates', async () => {
@@ -87,11 +95,8 @@ ipcMain.handle('analysis:get-dates', async () => {
 
 ipcMain.handle('analysis:run-single-date', async (_event, date: string) => {
     try {
-        console.log('[IPC] analysis:run-single-date called with date:', date)
         const config = await getConfig()
-        console.log('[IPC] Config loaded:', { employeeId: config.employeeId, hasDecryptionKey: !!config.decryptionKey })
         const result = await analyzeSingleDate(date, config)
-        console.log('[IPC] Analysis result:', result)
         return { success: true, data: result }
     } catch (error) {
         console.error('[IPC] analysis:run-single-date error:', error)
@@ -101,10 +106,8 @@ ipcMain.handle('analysis:run-single-date', async (_event, date: string) => {
 
 ipcMain.handle('analysis:run-multi-date', async (_event, dates: string[]) => {
     try {
-        console.log('[IPC] analysis:run-multi-date called with dates:', dates)
         const config = await getConfig()
         const result = await analyzeMultiDate(dates, config)
-        console.log('[IPC] Multi-date analysis result:', result)
         return { success: true, data: result }
     } catch (error) {
         console.error('[IPC] analysis:run-multi-date error:', error)

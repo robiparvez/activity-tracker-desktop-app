@@ -41,7 +41,6 @@ export async function setConfig(newConfig: Partial<Config>): Promise<void> {
 }
 
 export async function initializeConfig(): Promise<Config> {
-    console.log('[Config] Initializing configuration...')
     const currentConfig = await getConfig()
     let updated = false
 
@@ -50,7 +49,6 @@ export async function initializeConfig(): Promise<Config> {
         try {
             currentConfig.employeeId = os.hostname()
             updated = true
-            console.log('[Config] Auto-detected hostname:', currentConfig.employeeId)
         } catch (error) {
             console.error('[Config] Failed to detect hostname:', error)
         }
@@ -64,7 +62,6 @@ export async function initializeConfig(): Promise<Config> {
             if (key && key.trim()) {
                 currentConfig.decryptionKey = key.trim()
                 updated = true
-                console.log('[Config] Auto-detected decryption key from agent.key')
             }
         } catch (error) {
             console.warn('[Config] agent.key not found or inaccessible at:', AGENT_KEY_PATH)
